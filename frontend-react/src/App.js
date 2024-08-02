@@ -21,7 +21,7 @@ const App = () => {
     if (chatOpen && messages.length === 0) {
       setMessages([
         { user: '', bot: 'Hello, welcome to our furniture store. My name is Eve and I am your customer representative. Please let me know how I can help you?' },
-        { user: '', bot: '', options: ['Product Information and General Queries', 'Submit a Ticket for Damaged Product'] }
+        { user: '', bot: '', options: ['Product Information', 'Submit a Ticket for Damaged Product'] }
       ]);
     }
   }, [chatOpen, messages.length]);
@@ -40,9 +40,8 @@ const App = () => {
         },
         body: JSON.stringify({ sessionId }),
       });
-  
+
       const data = await res.json();
-      console.log('Initial product information response:', data);
       setMessages((prevMessages) => [...prevMessages, { user: '', bot: data.response }]);
     } else if (option === 'Submit a Ticket for Damaged Product') {
       const res = await fetch('http://localhost:4000/api/initial-ticket-request', {
@@ -62,6 +61,30 @@ const App = () => {
     }
   };
   
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    if (question.trim()) {
+      const userMessage = { user: question, bot: '' };
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      setQuestion('');
+
+      const res = await fetch('http://localhost:4000/api/product-information-followup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question, sessionId }),
+      });
+
+      const data = await res.json();
+      setMessages((prevMessages) => [...prevMessages, { user: '', bot: data.response }]);
+    } else {
+      alert('Please enter a question.');
+    }
+    setIsSubmitting(false);
+  };
 
   const handleTicketSubmission = async (e) => {
     e.preventDefault();
@@ -131,32 +154,6 @@ const App = () => {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-  
-    if (question.trim()) {
-      const userMessage = { user: question, bot: '' };
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
-      setQuestion('');
-  
-      const res = await fetch('http://localhost:4000/api/product-information-followup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question, sessionId }),
-      });
-  
-      const data = await res.json();
-      console.log('Follow-up product information response:', data);
-      setMessages((prevMessages) => [...prevMessages, { user: '', bot: data.response }]);
-    } else {
-      alert('Please enter a question.');
-    }
-    setIsSubmitting(false);
-  };
-
   const toggleChat = () => {
     setChatOpen(!chatOpen);
   };
@@ -165,7 +162,7 @@ const App = () => {
     setSessionId(uuidv4());
     setMessages([]);
     setChatOpen(false);
-    setQuestion(''); // Clear the input box
+    setQuestion(''); 
   };
 
   const handleClickOutside = (e) => {
